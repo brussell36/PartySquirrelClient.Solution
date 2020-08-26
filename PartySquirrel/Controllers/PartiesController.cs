@@ -13,6 +13,7 @@ using PartySquirrel.ViewModels;
 
 namespace PartySquirrel.Controllers
 {
+  [Authorize]
   public class PartiesController : Controller
   {
     private readonly PartySquirrelContext _db;
@@ -31,11 +32,15 @@ namespace PartySquirrel.Controllers
     public async Task<ActionResult> Details(string id)
     {
       var user = await _userManager.FindByIdAsync(id);
+      var userId = this.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+      var currentUser = await _userManager.FindByIdAsync(userId);
       List<SquirrelUser> userSquirrels = _db.SquirrelUser.Where(join => join.UserId == id).Include(join => join.Squirrel).ToList();
-      int squirrelsCount = userSquirrels.Count();
-      PartyDetailsViewModel viewModel = new PartyDetailsViewModel();
+      List<PartyMessage> partyMessages = _db.PartyMessages.Where(message => message.UserId == id).Include(message => message.User).Include(message => message.UserFrom).ToList();
+      PartyDetailsViewModel viewModel = new PartyDetailsViewModel(); 
       viewModel.User = user;
-      viewModel.SquirrelCount = squirrelsCount;
+      viewModel.CurrentUser = currentUser;
+      viewModel.SquirrelCount = userSquirrels.Count();
+      viewModel.PartyMessages = partyMessages;
       int currentColumn = 1;
       foreach(SquirrelUser join in userSquirrels)
       {
